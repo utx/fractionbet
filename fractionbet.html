@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fraction Betting Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #1a1a1a;
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .game-container {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .card {
+            background-color: #4a4a4a;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 10px;
+            display: inline-block;
+            min-width: 120px;
+            min-height: 180px;
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            top: 0;
+            left: 0;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.8s;
+            transform-style: preserve-3d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 180px;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-back {
+            background-color: #3a3a3a;
+            transform: rotateY(180deg);
+        }
+
+        .fraction {
+            font-size: 28px;
+            line-height: 1.5;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .numerator, .denominator {
+            display: block;
+        }
+
+        .divider {
+            display: block;
+            width: 100%;
+            height: 2px;
+            background-color: white;
+            margin: 5px 0;
+        }
+
+        input {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 5px;
+            border: none;
+            width: 100px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin: 20px 0;
+            font-size: 18px;
+        }
+
+        .coins {
+            font-size: 24px;
+            color: gold;
+            margin: 20px 0;
+        }
+
+        .result {
+            margin: 20px 0;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .turn-counter {
+            font-size: 18px;
+            color: #888;
+            margin: 10px 0;
+        }
+
+        .rules {
+            text-align: left;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .win { color: #4CAF50; }
+        .lose { color: #f44336; }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Start Screen -->
+        <div id="startScreen" class="screen active">
+            <h1>Fraction Betting Game</h1>
+            <div class="rules">
+                <h2>Rules:</h2>
+                <p>• You start with 50 coins and have 10 turns to reach 100 coins</p>
+                <p>• Each turn, you'll see a fraction card and have your own hidden card</p>
+                <p>• Place a bet on whether your fraction is higher</p>
+                <p>• Win double your bet if your fraction is higher</p>
+                <p>• Win triple your bet if the fractions are equivalent</p>
+                <p>• Lose your bet if your fraction is lower</p>
+                <p>• After 10 turns, you need 100+ coins to win!</p>
+                <p>• If you lose all your coins, the game ends immediately</p>
+            </div>
+            <button id="startButton">Start Game</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <h1>Fraction Betting Game</h1>
+            <div class="coins">Coins: <span id="coinDisplay">50</span></div>
+            <div class="turn-counter">Turn <span id="turnDisplay">1</span>/10</div>
+            
+            <div id="dealerCard" class="card">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="fraction">
+                            <span id="dealerNumerator" class="numerator"></span>
+                            <div class="divider"></div>
+                            <span id="dealerDenominator" class="denominator"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="playerCard" class="card">
+                <div class="card-inner">
+                    <div class="card-front">?</div>
+                    <div class="card-back">
+                        <div class="fraction">
+                            <span id="playerNumerator" class="numerator"></span>
+                            <div class="divider"></div>
+                            <span id="playerDenominator" class="denominator"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <input type="number" id="betAmount" min="1" placeholder="Bet amount">
+                <button id="playButton">Place Bet</button>
+                <button id="continueButton" style="display: none;">Continue</button>
+            </div>
+            
+            <div id="result" class="result"></div>
+            <div id="status" class="status"></div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="endScreen" class="screen">
+            <h1>Game Over!</h1>
+            <div id="finalResult" class="result"></div>
+            <div class="status">
+                Final coins: <span id="finalCoins"></span>
+            </div>
+            <button>Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners to buttons
+            document.getElementById('startButton').addEventListener('click', startGame);
+            document.getElementById('playButton').addEventListener('click', placeBet);
+            
+            // Add continue button listener
+            const continueBtn = document.getElementById('continueButton');
+            if (continueBtn) {
+                continueBtn.addEventListener('click', () => {
+                    turns++;
+                    if (turns >= 10) {
+                        endGame();
+                    } else {
+                        document.getElementById('turnDisplay').textContent = turns + 1;
+                        setupRound();
+                    }
+                });
+            }
+            
+            document.querySelector('#endScreen button').addEventListener('click', restartGame);
+        });
+
+        let coins = 50;
+        let turns = 0;
+        let dealerFraction, playerFraction;
+        
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startGame() {
+            coins = 50;
+            turns = 0;
+            document.getElementById('coinDisplay').textContent = coins;
+            document.getElementById('turnDisplay').textContent = turns + 1;
+            showScreen('gameScreen');
+            setupRound();
+        }
+
+        function generateFraction() {
+            const denominators = [2, 3, 4, 5, 6, 8, 9, 10, 12, 15];
+            const denominator = denominators[Math.floor(Math.random() * denominators.length)];
+            const numerator = Math.floor(Math.random() * (denominator - 1)) + 1;
+            return {
+                numerator,
+                denominator,
+                value: numerator / denominator
+            };
+        }
+
+        function generateEquivalentFraction(fraction) {
+            const multipliers = [2, 3, 4];
+            const multiplier = multipliers[Math.floor(Math.random() * multipliers.length)];
+            return {
+                numerator: fraction.numerator * multiplier,
+                denominator: fraction.denominator * multiplier,
+                value: fraction.value
+            };
+        }
+
+        function setupRound() {
+            const shouldBeEquivalent = Math.random() < 0.2;
+            const playerShouldWin = Math.random() < 0.4; // 40% chance of winning (plus 20% chance of equivalent)
+            
+            if (shouldBeEquivalent) {
+                dealerFraction = generateFraction();
+                playerFraction = generateEquivalentFraction(dealerFraction);
+            } else {
+                if (playerShouldWin) {
+                    // Player should have higher fraction
+                    playerFraction = generateFraction();
+                    do {
+                        dealerFraction = generateFraction();
+                    } while (dealerFraction.value >= playerFraction.value || 
+                            Math.abs(playerFraction.value - dealerFraction.value) < 0.1);
+                } else {
+                    // Dealer should have higher fraction
+                    dealerFraction = generateFraction();
+                    do {
+                        playerFraction = generateFraction();
+                    } while (playerFraction.value >= dealerFraction.value || 
+                            Math.abs(playerFraction.value - dealerFraction.value) < 0.1);
+                }
+            }
+
+            document.getElementById('dealerNumerator').textContent = dealerFraction.numerator;
+            document.getElementById('dealerDenominator').textContent = dealerFraction.denominator;
+            document.getElementById('playerNumerator').textContent = playerFraction.numerator;
+            document.getElementById('playerDenominator').textContent = playerFraction.denominator;
+            
+            document.getElementById('playerCard').classList.remove('flipped');
+            document.getElementById('result').textContent = '';
+            document.getElementById('betAmount').value = '';
+            document.getElementById('playButton').disabled = false;
+            document.getElementById('playButton').style.display = 'inline-block';
+            document.getElementById('continueButton').style.display = 'none';
+            document.getElementById('betAmount').disabled = false;
+        }
+
+        function placeBet() {
+            const betAmount = parseInt(document.getElementById('betAmount').value);
+            
+            if (isNaN(betAmount) || betAmount < 1 || betAmount > coins) {
+                alert('Please enter a valid bet amount!');
+                return;
+            }
+
+            document.getElementById('playerCard').classList.add('flipped');
+            document.getElementById('playButton').disabled = true;
+            document.getElementById('betAmount').disabled = true;
+            
+            setTimeout(() => {
+                const isEquivalent = Math.abs(playerFraction.value - dealerFraction.value) < 0.0001;
+                const playerWins = playerFraction.value > dealerFraction.value;
+                let resultText, winAmount;
+
+                if (isEquivalent) {
+                    winAmount = betAmount * 3;
+                    resultText = `Equivalent fractions! You won ${winAmount} coins! (Triple bet)`;
+                } else if (playerWins) {
+                    winAmount = betAmount * 2;
+                    resultText = `You won ${winAmount} coins! (Double bet)`;
+                } else {
+                    winAmount = -betAmount;
+                    resultText = `You lost ${betAmount} coins!`;
+                }
+
+                coins += winAmount;
+                document.getElementById('coinDisplay').textContent = coins;
+                document.getElementById('result').textContent = resultText;
+                document.getElementById('result').className = 'result ' + (winAmount > 0 ? 'win' : 'lose');
+
+                document.getElementById('playButton').style.display = 'none';
+                
+                // Check if player has lost all coins
+                if (coins <= 0) {
+                    setTimeout(() => endGame(), 1500);
+                } else {
+                    const continueBtn = document.getElementById('continueButton');
+                continueBtn.style.display = 'inline-block';
+                }
+            }, 1000);
+        }
+
+
+
+        function endGame() {
+            document.getElementById('finalCoins').textContent = coins;
+            let resultText, resultClass;
+            
+            if (coins <= 0) {
+                resultText = 'Game Over! You lost all your coins!';
+                resultClass = 'lose';
+            } else {
+                const won = coins >= 100;
+                resultText = won ? 'Congratulations! You beat the game!' : 'Sorry, you didn\'t reach 100 coins!';
+                resultClass = won ? 'win' : 'lose';
+            }
+            
+            document.getElementById('finalResult').textContent = resultText;
+            document.getElementById('finalResult').className = 'result ' + resultClass;
+            showScreen('endScreen');
+        }
+
+        function restartGame() {
+            showScreen('startScreen');
+        }
+    </script>
+</body>
+</html>
